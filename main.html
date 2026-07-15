@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Фишинг: Найди подделку</title>
+<style>
+  :root{
+    --office-white:#ffffff;
+    --office-gray:#f2f4f7;
+    --office-gray-dark:#dde2e8;
+    --office-blue:#2557a7;
+    --office-blue-dark:#173d73;
+    --office-text:#1f2933;
+    --office-text-soft:#5b6572;
+    --danger:#c0392b;
+    --danger-bg:#fdecea;
+    --success:#1e8449;
+    --success-bg:#e9f7ef;
+    --warn:#b8860b;
+    --warn-bg:#fff8e1;
+    --radius:8px;
+    --shadow:0 2px 10px rgba(23,61,115,0.08);
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Arial, Helvetica, sans-serif;
+    background:var(--office-gray);
+    color:var(--office-text);
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+  }
+  #app{
+    width:100%;
+    max-width:900px;
+    min-height:100vh;
+    background:var(--office-white);
+    display:flex;
+    flex-direction:column;
+    box-shadow:var(--shadow);
+  }
+
+  /* ---------- Экран приветствия / брифинг / финал ---------- */
+  .screen{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    padding:40px 28px;
+    gap:18px;
+  }
+  .screen h1{
+    font-size:1.9rem;
+    color:var(--office-blue-dark);
+    margin:0;
+  }
+  .screen .subtitle{
+    color:var(--office-text-soft);
+    font-size:1.05rem;
+    max-width:520px;
+    line-height:1.5;
+  }
+  .logo-badge{
+    width:72px;height:72px;border-radius:50%;
+    background:linear-gradient(135deg,var(--office-blue),var(--office-blue-dark));
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:32px;font-weight:700;
+    box-shadow:0 4px 14px rgba(23,61,115,0.35);
+  }
+  .briefing-box{
+    background:var(--office-gray);
+    border:1px solid var(--office-gray-dark);
+    border-left:4px solid var(--office-blue);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    max-width:560px;
+    text-align:left;
+    line-height:1.55;
+  }
+  .briefing-box .who{
+    font-weight:600;
+    color:var(--office-blue-dark);
+    margin-bottom:6px;
+    display:block;
+  }
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+    border-radius:6px;
+    font-size:0.98rem;
+    padding:12px 26px;
+    transition:transform .05s ease, box-shadow .15s ease, background .15s ease;
+  }
+  button:active{transform:translateY(1px);}
+  .btn-primary{
+    background:var(--office-blue);
+    color:#fff;
+    font-weight:600;
+  }
+  .btn-primary:hover{background:var(--office-blue-dark);}
+  .btn-primary:disabled{
+    background:#a9b6c8;
+    cursor:not-allowed;
+  }
+  .btn-secondary{
+    background:var(--office-gray-dark);
+    color:var(--office-text);
+  }
+  .btn-secondary:hover{background:#cbd3dc;}
+
+  /* ---------- Верхняя панель ---------- */
+  #top-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:12px 22px;
+    background:var(--office-blue-dark);
+    color:#fff;
+  }
+  #top-bar .brand{
+    display:flex;align-items:center;gap:10px;
+    font-weight:700;
+    font-size:1.02rem;
+    white-space:nowrap;
+  }
+  #top-bar .brand .icon{
+    width:28px;height:28px;border-radius:6px;
+    background:#fff;color:var(--office-blue-dark);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;font-weight:800;
+  }
+  #top-bar .stats{
+    display:flex;align-items:center;gap:22px;
+    font-size:0.88rem;
+  }
+  #top-bar .stat{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+  #top-bar .stat .label{opacity:.75;font-size:0.72rem;text-transform:uppercase;letter-spacing:.03em;}
+  #top-bar .stat .value{font-weight:700;font-size:0.95rem;}
+  #trust-wrap{width:130px;}
+  #trust-bar-bg{
+    width:100%;height:8px;border-radius:5px;
+    background:rgba(255,255,255,0.25);
+    overflow:hidden;
+  }
+  #trust-bar-fill{
+    height:100%;
+    width:50%;
+    background:linear-gradient(90deg,#f4c542,#4caf6d);
+    border-radius:5px;
+    transition:width .4s ease;
+  }
+
+  /* ---------- Прогресс раунда ---------- */
+  #progress-bar-bg{
+    height:5px;width:100%;
+    background:var(--office-gray-dark);
+  }
+  #progress-bar-fill{
+    height:100%;
+    background:var(--office-blue);
+    width:0%;
+    transition:width .4s ease;
+  }
+
+  /* ---------- Игровая зона ---------- */
+  #game-area{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    padding:22px;
+    gap:16px;
+  }
+  #round-title{
+    font-size:0.98rem;
+    color:var(--office-text-soft);
+  }
+  #round-title b{color:var(--office-text);}
+
+  #scene-wrap{
+    border:1px solid var(--office-gray-dark);
+    border-radius:var(--radius);
+    background:var(--office-gray);
+    padding:18px;
+    min-height:300px;
+  }
+
+  /* --- клики-детали --- */
+  .hotspot{
+    cursor:pointer;
+    border-bottom:2px dotted #8a94a3;
+    border-radius:3px;
+    padding:0 1px;
+    transition:background .15s ease;
+  }
+  .hotspot:hover{background:#eaf1fb;}
+  .hotspot.found{
+    background:#fff3b0;
+    border-bottom:2px dotted var(--warn);
+  }
+  .hotspot.found.suspicious{background:#fbe0dd;border-bottom-color:var(--danger);}
+  .hotspot.found.safe{background:#dff3e6;border-bottom-color:var(--success);}
+  .hotspot.found.neutral{background:#e7e9ee;border-bottom-color:#8a94a3;}
+
+  /* --- имитация письма --- */
+  .mock-email{
+    background:#fff;
+    border:1px solid var(--office-gray-dark);
+    border-radius:6px;
+    overflow:hidden;
+  }
+  .mock-email .mail-toolbar{
+    background:var(--office-gray);
+    padding:8px 14px;
+    font-size:0.78rem;
+    color:var(--office-text-soft);
+    border-bottom:1px solid var(--office-gray-dark);
+  }
+  .mock-email .mail-head{
+    padding:14px 16px 10px;
+    border-bottom:1px solid var(--office-gray-dark);
+  }
+  .mock-email .mail-subject{
+    font-size:1.05rem;
+    font-weight:700;
+    margin-bottom:8px;
+  }
+  .mock-email .mail-field{
+    font-size:0.85rem;
+    color:var(--office-text-soft);
+    margin:2px 0;
+  }
+  .mock-email .mail-field b{color:var(--office-text);font-weight:600;}
+  .mock-email .mail-body{
+    padding:16px;
+    font-size:0.92rem;
+    line-height:1.65;
+  }
+  .mock-email .mail-body p{margin:0 0 12px;}
+  .mail-btn{
+    display:inline-block;
+    background:var(--office-blue);
+    color:#fff !important;
+    padding:9px 18px;
+    border-radius:5px;
+    font-weight:600;
+    font-size:0.88rem;
+    margin-top:6px;
+    border-bottom:none !important;
+  }
+  .mail-btn:hover{background:var(--office-blue-dark);}
+  .mail-attachment{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--office-gray);
+    border:1px solid var(--office-gray-dark);
+    padding:8px 12px;border-radius:6px;
+    font-size:0.85rem;margin-top:8px;
+  }
+
+  /* --- имитация браузера --- */
+  .mock-browser{
+    background:#fff;border:1px solid var(--office-gray-dark);
+    border-radius:6px;overflow:hidden;
+  }
+  .browser-topbar{
+    background:#e3e7ec;padding:8px 10px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .browser-dots span{
+    display:inline-block;width:9px;height:9px;border-radius:50%;
+    background:#c3c9d1;margin-right:4px;
+  }
+  .browser-addr{
+    flex:1;background:#fff;border:1px solid var(--office-gray-dark);
+    border-radius:14px;padding:5px 12px;font-size:0.82rem;
+    display:flex;align-items:center;gap:6px;color:var(--office-text-soft);
+  }
+  .lock-icon{font-size:0.85rem;}
+  .site-body{padding:26px 22px;text-align:center;}
+  .site-logo{
+    font-size:1.5rem;font-weight:800;color:var(--office-blue-dark);
+    display:inline-block;margin-bottom:14px;
+    padding:6px 14px;border:2px solid var(--office-blue-dark);border-radius:6px;
+  }
+  .site-logo.blurred{filter:blur(1.6px);opacity:.75;letter-spacing:1px;transform:skewX(-2deg);}
+  .site-form{
+    max-width:280px;margin:0 auto;text-align:left;
+  }
+  .site-form label{font-size:0.78rem;color:var(--office-text-soft);display:block;margin-top:10px;}
+  .site-form .fake-input{
+    background:#f5f6f8;border:1px solid var(--office-gray-dark);
+    border-radius:5px;padding:9px 10px;font-size:0.85rem;color:#9aa3ad;margin-top:3px;
+  }
+
+  /* --- имитация мессенджера --- */
+  .mock-messenger{
+    background:#fff;border:1px solid var(--office-gray-dark);border-radius:6px;overflow:hidden;
+    max-width:480px;margin:0 auto;
+  }
+  .msg-header{
+    background:var(--office-gray);padding:12px 14px;
+    display:flex;align-items:center;gap:10px;
+    border-bottom:1px solid var(--office-gray-dark);
+  }
+  .msg-avatar{
+    width:36px;height:36px;border-radius:50%;
+    background:#c7d3e3;display:flex;align-items:center;justify-content:center;
+    font-weight:700;color:var(--office-blue-dark);
+  }
+  .msg-name{font-weight:700;font-size:0.92rem;}
+  .msg-sub{font-size:0.75rem;color:var(--office-text-soft);}
+  .msg-thread{padding:16px;display:flex;flex-direction:column;gap:10px;}
+  .bubble{
+    background:var(--office-gray);
+    border-radius:14px;padding:10px 14px;
+    font-size:0.88rem;line-height:1.5;
+    max-width:85%;align-self:flex-start;
+  }
+
+  /* ---------- Подсказка (tooltip панель) ---------- */
+  #inspector{
+    border:1px solid var(--office-gray-dark);
+    border-radius:var(--radius);
+    background:#fff;
+    padding:12px 16px;
+    min-height:26px;
+    font-size:0.88rem;
+    color:var(--office-text-soft);
+  }
+  #inspector.empty::before{content:'Наведите курсор и кликните на подозрительные (или обычные) детали в письме/сайте выше — здесь появится пояснение.';}
+  #inspector .tip-line{display:flex;gap:8px;align-items:flex-start;color:var(--office-text);}
+  #inspector .tip-tag{
+    flex-shrink:0;
+    font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    padding:2px 7px;border-radius:4px;
+  }
+  .tag-suspicious{background:var(--danger-bg);color:var(--danger);}
+  .tag-safe{background:var(--success-bg);color:var(--success);}
+  .tag-neutral{background:#eceef1;color:#5b6572;}
+
+  /* ---------- Нижняя панель ---------- */
+  #bottom-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  #decision-buttons{display:flex;gap:10px;}
+  .btn-phish{
+    background:var(--danger-bg);color:var(--danger);
+    border:1.5px solid var(--danger);
+    font-weight:700;
+  }
+  .btn-phish:hover:not(:disabled){background:var(--danger);color:#fff;}
+  .btn-genuine{
+    background:var(--success-bg);color:var(--success);
+    border:1.5px solid var(--success);
+    font-weight:700;
+  }
+  .btn-genuine:hover:not(:disabled){background:var(--success);color:#fff;}
+  .btn-phish:disabled, .btn-genuine:disabled{
+    opacity:.45;cursor:not-allowed;
+  }
+  .btn-hint{
+    background:var(--warn-bg);color:var(--warn);
+    border:1.5px solid var(--warn);
+  }
+  .btn-hint:hover:not(:disabled){background:var(--warn);color:#fff;}
+  .btn-hint:disabled{opacity:.5;cursor:not-allowed;}
+  #found-counter{font-size:0.8rem;color:var(--office-text-soft);}
+
+  /* ---------- Обратная связь по раунду ---------- */
+  #feedback{
+    display:none;
+    border-radius:var(--radius);
+    padding:16px 18px;
+    line-height:1.55;
+    font-size:0.92rem;
+  }
+  #feedback.correct{background:var(--success-bg);border:1px solid #b9e3c6;color:#1c5a34;}
+  #feedback.incorrect{background:var(--danger-bg);border:1px solid #f0c3bd;color:#8a2c22;}
+  #feedback .fb-title{font-weight:700;margin-bottom:6px;font-size:1rem;}
+  #feedback ul{margin:8px 0 0;padding-left:20px;}
+
+  /* ---------- Финальный экран ---------- */
+  .final-stats{
+    display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin:6px 0 10px;
+  }
+  .final-stat-card{
+    background:var(--office-gray);border:1px solid var(--office-gray-dark);
+    border-radius:var(--radius);padding:16px 22px;min-width:130px;
+  }
+  .final-stat-card .num{font-size:1.6rem;font-weight:800;color:var(--office-blue-dark);}
+  .final-stat-card .lbl{font-size:0.78rem;color:var(--office-text-soft);margin-top:2px;}
+  .level-badge{
+    display:inline-block;margin:6px 0 4px;
+    padding:8px 20px;border-radius:20px;
+    font-weight:700;font-size:1rem;
+    background:var(--office-blue);color:#fff;
+  }
+  .rules-box{
+    text-align:left;max-width:540px;
+    background:var(--office-gray);
+    border:1px solid var(--office-gray-dark);
+    border-radius:var(--radius);
+    padding:18px 22px;
+  }
+  .rules-box h3{margin:0 0 10px;font-size:1rem;color:var(--office-blue-dark);}
+  .rules-box ol{margin:0;padding-left:20px;line-height:1.7;font-size:0.9rem;}
+
+  @media (max-width:560px){
+    #top-bar{flex-direction:column;align-items:flex-start;gap:10px;}
+    #top-bar .stats{width:100%;justify-content:space-between;}
+    #bottom-bar{flex-direction:column;align-items:stretch;}
+    #decision-buttons{flex-direction:column;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ЭКРАН 1: ЗАСТАВКА -->
+  <div id="screen-start" class="screen">
+    <div class="logo-badge">🎣</div>
+    <h1>Фишинг: Найди подделку</h1>
+    <p class="subtitle">Обучающий point-and-click квест по кибербезопасности. Вы — сотрудник компании NordTech. Изучайте письма, сайты и сообщения, находите подозрительные детали и решайте: подделка перед вами или нет.</p>
+    <button class="btn-primary" onclick="goToBriefing()">Начать игру</button>
+  </div>
+
+  <!-- ЭКРАН 2: БРИФИНГ -->
+  <div id="screen-briefing" class="screen" style="display:none;">
+    <div class="logo-badge">🛡️</div>
+    <h1>Брифинг от отдела ИБ</h1>
+    <div class="briefing-box">
+      <span class="who">Руководитель отдела информационной безопасности NordTech:</span>
+      В последнее время участились случаи мошенничества — сотрудники получают поддельные письма, заходят на фальшивые сайты и переписываются с мошенниками в мессенджерах. Помогите нам проверить сегодняшнюю почту и несколько ресурсов.
+      <br><br>
+      Внимательно осматривайте каждое письмо и сайт. Нажимайте на подозрительные детали, чтобы изучить их, а затем решайте — это подделка или нет.
+    </div>
+    <button class="btn-primary" onclick="startGame()">Понятно, приступим</button>
+  </div>
+
+  <!-- ЭКРАН ИГРЫ -->
+  <div id="screen-game" style="display:none; flex-direction:column; flex:1;">
+    <div id="top-bar">
+      <div class="brand"><span class="icon">N</span> NordTech · Проверка безопасности</div>
+      <div class="stats">
+        <div class="stat"><span class="label">Раунд</span><span class="value" id="stat-round">1 / 8</span></div>
+        <div class="stat"><span class="label">Очки</span><span class="value" id="stat-score">0</span></div>
+        <div class="stat">
+          <span class="label">Бдительность</span>
+          <div id="trust-wrap"><div id="trust-bar-bg"><div id="trust-bar-fill"></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div id="progress-bar-bg"><div id="progress-bar-fill"></div></div>
+
+    <div id="game-area">
+      <div id="round-title"></div>
+      <div id="scene-wrap"></div>
+      <div id="inspector" class="empty"></div>
+
+      <div id="feedback"></div>
+
+      <div id="bottom-bar">
+        <div id="decision-buttons">
+          <button class="btn-phish" id="btn-phish" disabled onclick="makeDecision('phishing')">🚩 Это фишинг</button>
+          <button class="btn-genuine" id="btn-genuine" disabled onclick="makeDecision('genuine')">✅ Это настоящее</button>
+          <button class="btn-hint" id="btn-hint" onclick="useHint()">💡 Подсказка</button>
+        </div>
+        <div id="found-counter">Найдено деталей: 0</div>
+      </div>
+
+      <div style="text-align:center;">
+        <button class="btn-primary" id="btn-next" style="display:none;" onclick="nextRound()">Следующий раунд →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ЭКРАН ФИНАЛА -->
+  <div id="screen-final" class="screen" style="display:none;">
+    <div class="logo-badge">🏁</div>
+    <h1>Итоги проверки</h1>
+    <div class="level-badge" id="final-level">—</div>
+    <div class="final-stats">
+      <div class="final-stat-card"><div class="num" id="final-score">0</div><div class="lbl">очков набрано</div></div>
+      <div class="final-stat-card"><div class="num" id="final-percent">0%</div><div class="lbl">верных решений</div></div>
+      <div class="final-stat-card"><div class="num" id="final-correct">0/8</div><div class="lbl">раундов пройдено верно</div></div>
+    </div>
+    <div class="rules-box">
+      <h3>Правила цифровой бдительности</h3>
+      <ol>
+        <li>Всегда проверяйте адрес отправителя и точное написание домена сайта — мошенники меняют одну-две буквы.</li>
+        <li>Не поддавайтесь давлению срочности: спешка и угрозы — любимый приём мошенников.</li>
+        <li>Наводите курсор на ссылку перед кликом, чтобы увидеть настоящий адрес назначения.</li>
+        <li>Обращайте внимание на качество логотипов, грамматику и общий стиль текста.</li>
+        <li>Не открывайте вложения с двойным расширением (например, «файл.pdf.exe») и не вводите пароли без защищённого соединения (https).</li>
+        <li>Если сообщение вызывает сомнение — уточните информацию по официальному каналу связи, а не через ссылку из письма.</li>
+      </ol>
+    </div>
+    <button class="btn-primary" onclick="restartGame()">Пройти ещё раз</button>
+  </div>
+
+</div>
+
+<script>
+/* ==========================================================================
+   ДАННЫЕ РАУНДОВ
+   Каждый раунд: type, HTML сцены (с .hotspot элементами), correct verdict,
+   объяснения при верном/неверном ответе, подсказка.
+   verdict: 'phishing' | 'genuine'
+   hotspot data-verdict: 'suspicious' | 'safe' | 'neutral'
+   ========================================================================== */
+const ROUNDS = [
+
+// РАУНД 1 — простое фишинговое письмо
+{
+  key:'r1', type:'email', label:'Письмо 1 из 8',
+  correct:'phishing',
+  hint:'Присмотритесь внимательно к адресу отправителя — совпадает ли он с официальным доменом банка?',
+  scene:`
+    <div class="mock-email">
+      <div class="mail-toolbar">Входящие · Почтовый клиент NordTech</div>
+      <div class="mail-head">
+        <div class="mail-subject">
+          <span class="hotspot" data-verdict="suspicious" data-tip="Тема нагнетает панику словом «немедленно» и угрозой блокировки — классический приём давления на срочность.">Ваш счёт заблокирован! Подтвердите личность немедленно</span>
+        </div>
+        <div class="mail-field">От: <b><span class="hotspot" data-verdict="suspicious" data-tip="Домен bank-secure-login.com не является официальным доменом банка — настоящие банки не используют подобные «убедительные» домены с посторонними словами.">support@bank-secure-login.com</span></b></div>
+        <div class="mail-field">Кому: you@nordtech.com</div>
+        <div class="mail-field"><span class="hotspot" data-verdict="neutral" data-tip="Время получения письма само по себе ничего не говорит о его подлинности.">Сегодня, 10:42</span></div>
+      </div>
+      <div class="mail-body">
+        <p>Уважаемый клиент! Мы <span class="hotspot" data-verdict="suspicious" data-tip="Грамматические и стилистические ошибки — «обнаружили обнаружили», «не медленно» — частый признак фишинга, особенно в письмах, переведённых машинным способом.">обнаружили подозрительную активность обнаружили</span> на вашем счету. Пожалуйста, подтвердите ваши данные <span class="hotspot" data-verdict="suspicious" data-tip="Ещё одна орфографическая ошибка: «не медленно» вместо «незамедлительно/срочно» — раздельное написание частицы выдаёт непрофессиональный текст.">не медленно</span>.</p>
+        <p><span class="hotspot" data-verdict="suspicious" data-tip="Искусственное давление времени («в течение 24 часов иначе счёт будет закрыт навсегда») заставляет действовать не думая — это классический признак мошенничества.">Если вы не подтвердите личность в течение 24 часов, счёт будет закрыт навсегда.</span></p>
+        <a href="#" class="hotspot mail-btn" data-verdict="suspicious" data-tip="При наведении на кнопку видно, что ссылка ведёт на bank-secure-login.com/verify — адрес не совпадает с официальным сайтом банка, хотя текст кнопки выглядит безобидно.">Подтвердить личность</a>
+      </div>
+    </div>
+  `,
+  explainCorrect:'Верно! Это письмо — фишинг. Обратите внимание на поддельный домен отправителя, искусственную срочность и ошибки в тексте.',
+  explainIncorrect:'На самом деле это фишинговое письмо. Стоило заметить: домен support@bank-secure-login.com не принадлежит банку, текст давит на срочность, в письме есть грамматические ошибки, а кнопка ведёт не туда, куда написано.'
+},
+
+// РАУНД 2 — подлинное письмо
+{
+  key:'r2', type:'email', label:'Письмо 2 из 8',
+  correct:'genuine',
+  hint:'Проверьте домен отправителя и обратите внимание, требует ли письмо от вас срочных действий по ссылке.',
+  scene:`
+    <div class="mock-email">
+      <div class="mail-toolbar">Входящие · Почтовый клиент NordTech</div>
+      <div class="mail-head">
+        <div class="mail-subject">Пароль от корпоративной почты успешно изменён</div>
+        <div class="mail-field">От: <b><span class="hotspot" data-verdict="safe" data-tip="Домен it-support@nordtech.com полностью совпадает с официальным доменом компании — хороший знак.">it-support@nordtech.com</span></b></div>
+        <div class="mail-field">Кому: you@nordtech.com</div>
+      </div>
+      <div class="mail-body">
+        <p>Здравствуйте! <span class="hotspot" data-verdict="safe" data-tip="Спокойный, информативный тон без давления и угроз — типично для настоящего технического уведомления.">Информируем вас, что пароль от корпоративной учётной записи был успешно изменён сегодня в 09:15.</span></p>
+        <p><span class="hotspot" data-verdict="safe" data-tip="В письме нет ссылок для перехода и просьб «подтвердить» данные — оно носит исключительно информационный характер, срочных действий от вас не требуется.">Если это были не вы — обратитесь в службу поддержки по внутреннему номеру 4455. Никаких действий по этому письму предпринимать не нужно.</span></p>
+        <p><span class="hotspot" data-verdict="neutral" data-tip="Стандартная подпись отдела — сама по себе не является признаком ни подделки, ни подлинности.">С уважением, отдел ИТ NordTech</span></p>
+      </div>
+    </div>
+  `,
+  explainCorrect:'Верно, письмо настоящее! Домен совпадает с корпоративным, тон спокойный, ссылок для перехода нет — это обычное информационное уведомление.',
+  explainIncorrect:'На самом деле письмо настоящее. Домен it-support@nordtech.com официальный, в тексте нет давления и просьб переходить по ссылкам — все признаки говорят о подлинности.'
+},
+
+// РАУНД 3 — поддельный сайт
+{
+  key:'r3', type:'site', label:'Сайт 1 из 8',
+  correct:'phishing',
+  hint:'Внимательно прочитайте адресную строку браузера целиком, включая всё, что идёт после имени банка.',
+  scene:`
+    <div class="mock-browser">
+      <div class="browser-topbar">
+        <span class="browser-dots"><span></span><span></span><span></span></span>
+        <div class="browser-addr">
+          <span class="lock-icon hotspot" data-verdict="suspicious" data-tip="Значок замка отсутствует: сайт открыт по обычному http, а не по защищённому https. Вводить пароль на такой странице небезопасно.">🔓</span>
+          <span class="hotspot" data-verdict="suspicious" data-tip="Внимательно прочитайте адрес целиком: bank-online-secure.ru.verify-account.com — настоящее доменное имя здесь verify-account.com, а всё, что «похоже на банк», — лишь поддомен-обманка.">http://bank-online-secure.ru.verify-account.com</span>
+        </div>
+      </div>
+      <div class="site-body">
+        <div class="site-logo blurred hotspot" data-verdict="suspicious" data-tip="Логотип слегка размыт и искажён — злоумышленники часто копируют изображения низкого качества.">NordBank</div>
+        <div class="site-form">
+          <label>Логин</label><div class="fake-input hotspot" data-verdict="neutral" data-tip="Само поле ввода логина выглядит обычно — форма входа есть даже на настоящих сайтах.">введите логин</div>
+          <label>Пароль</label><div class="fake-input">введите пароль</div>
+          <button class="btn-primary" style="margin-top:16px;width:100%;" disabled>Войти в личный кабинет</button>
+        </div>
+      </div>
+    </div>
+  `,
+  explainCorrect:'Верно! Это поддельный сайт. Настоящий домен banka здесь не bank-online-secure.ru — это лишь поддомен, соединение не защищено (http), а логотип размыт.',
+  explainIncorrect:'На самом деле сайт поддельный. Стоило заметить: реальное доменное имя — verify-account.com, а не банк; отсутствует значок https; логотип размыт и искажён.'
+},
+
+// РАУНД 4 — подлинный сайт
+{
+  key:'r4', type:'site', label:'Сайт 2 из 8',
+  correct:'genuine',
+  hint:'Сравните написание домена и наличие значка защищённого соединения с обычным официальным сайтом банка.',
+  scene:`
+    <div class="mock-browser">
+      <div class="browser-topbar">
+        <span class="browser-dots"><span></span><span></span><span></span></span>
+        <div class="browser-addr">
+          <span class="lock-icon hotspot" data-verdict="safe" data-tip="Значок замка на месте: соединение защищено (https) — данные передаются в зашифрованном виде.">🔒</span>
+          <span class="hotspot" data-verdict="safe" data-tip="Домен nordbank.com короткий, понятный и полностью совпадает с официальным названием банка — без лишних слов и поддоменов.">https://www.nordbank.com</span>
+        </div>
+      </div>
+      <div class="site-body">
+        <div class="site-logo hotspot" data-verdict="safe" data-tip="Логотип чёткий, ровный, без искажений — характерно для официального сайта.">NordBank</div>
+        <div class="site-form">
+          <label>Логин</label><div class="fake-input hotspot" data-verdict="neutral" data-tip="Форма входа выглядит стандартно — она не является признаком ни подделки, ни подлинности сама по себе.">введите логин</div>
+          <label>Пароль</label><div class="fake-input">введите пароль</div>
+          <button class="btn-primary" style="margin-top:16px;width:100%;" disabled>Войти в личный кабинет</button>
+        </div>
+      </div>
+    </div>
+  `,
+  explainCorrect:'Верно, сайт настоящий! Домен совпадает с официальным, соединение защищено (https), логотип чёткий — все признаки в порядке.',
+  explainIncorrect:'На самом деле сайт настоящий. Домен nordbank.com официальный, есть https, логотип не искажён — оснований считать сайт подделкой нет.'
+},
+
+// РАУНД 5 — фишинг в мессенджере
+{
+  key:'r5', type:'messenger', label:'Сообщение 1 из 8',
+  correct:'phishing',
+  hint:'Откройте профиль собеседника — обратите внимание, когда был создан аккаунт.',
+  scene:`
+    <div class="mock-messenger">
+      <div class="msg-header">
+        <div class="msg-avatar hotspot" data-verdict="neutral" data-tip="Аватар-заглушка сам по себе ничего не доказывает — многие пользователи не ставят фото.">АП</div>
+        <div>
+          <div class="msg-name">Алексей Петров (коллега)</div>
+          <div class="msg-sub hotspot" data-verdict="suspicious" data-tip="Аккаунт зарегистрирован буквально сегодня — странно для коллеги, с которым вы давно общаетесь. Скорее всего, настоящий аккаунт был взломан или подделан заново.">Аккаунт создан: сегодня</div>
+        </div>
+      </div>
+      <div class="msg-thread">
+        <div class="bubble hotspot" data-verdict="suspicious" data-tip="Манера речи резко отличается от обычного делового стиля коллеги — обилие восклицательных знаков и настойчивость нетипичны для рабочей переписки.">Привет!! Срочно нужна твоя помощь, я сейчас на встрече и не могу говорить</div>
+        <div class="bubble hotspot" data-verdict="suspicious" data-tip="Просьба быстро оплатить «счёт компании» через личную переписку — обход официальных процедур — классическая схема мошенничества с компрометацией переписки.">Нужно срочно оплатить счёт от имени компании, иначе сорвём сделку. Переведи по этой ссылке прямо сейчас, я потом всё объясню</div>
+        <div class="bubble hotspot" data-verdict="suspicious" data-tip="Сокращённая ссылка скрывает реальный адрес назначения — под ней может скрываться любой сайт, в том числе поддельная форма оплаты.">bit.ly/nt-pay-8821</div>
+      </div>
+    </div>
+  `,
+  explainCorrect:'Верно! Это фишинг в мессенджере. Аккаунт создан только что, стиль общения не похож на обычный, а ссылка сокращена, чтобы скрыть настоящий адрес.',
+  explainIncorrect:'На самом деле это фишинговое сообщение. Стоило заметить: аккаунт «коллеги» создан только сегодня, необычный тон общения и давление, а также подозрительная сокращённая ссылка.'
+},
+
+// РАУНД 6 — смешанные признаки: двойное расширение вложения
+{
+  key:'r6', type:'email', label:'Письмо 3 из 8',
+  correct:'phishing',
+  hint:'Внимательно прочитайте полное название вложенного файла — сколько у него расширений?',
+  scene:`
+    <div class="mock-email">
+      <div class="mail-toolbar">Входящие · Почтовый клиент NordTech</div>
+      <div class="mail-head">
+        <div class="mail-subject">Отчёт за квартал на подпись</div>
+        <div class="mail-field">От: <b><span class="hotspot" data-verdict="neutral" data-tip="Домен nordtech.com действительно официальный — но правильный домен не гарантирует, что вложение безопасно: адрес отправителя мог быть подделан (спуфинг), а вложение проверяется отдельно.">buhgalteria@nordtech.com</span></b></div>
+        <div class="mail-field">Кому: you@nordtech.com</div>
+      </div>
+      <div class="mail-body">
+        <p><span class="hotspot" data-verdict="neutral" data-tip="Обращение по имени должности звучит правдоподобно и само по себе не является признаком подделки.">Добрый день! Пожалуйста, ознакомьтесь и подпишите отчёт во вложении.</span></p>
+        <div class="mail-attachment hotspot" data-verdict="suspicious" data-tip="У файла ДВА расширения: .pdf.exe. Настоящий отчёт — это документ, а .exe означает исполняемую программу. Такое двойное расширение часто маскирует вредоносный файл под безобидный документ.">📎 Отчёт_за_квартал.pdf.exe (2,1 МБ)</div>
+        <p><span class="hotspot" data-verdict="suspicious" data-tip="Мягкое, но настойчивое требование ответить «сегодня до конца дня» — элемент давления, который встречается и в менее очевидных фишинговых письмах.">Ответьте, пожалуйста, сегодня до конца дня — отчёт нужно закрыть в срок.</span></p>
+      </div>
+    </div>
+  `,
+  explainCorrect:'Верно, это фишинг! Несмотря на правильный домен отправителя, вложение «Отчёт_за_квартал.pdf.exe» — это замаскированная исполняемая программа, а не документ.',
+  explainIncorrect:'На самом деле это фишинговое письмо. Главный признак — вложение с двойным расширением .pdf.exe: оно выглядит как PDF, но на самом деле является исполняемым файлом. Корректный домен отправителя сам по себе ничего не гарантирует — адрес можно подделать.'
+},
+
+// РАУНД 7 — смешанные признаки: похожий на директора отправитель + подарочные карты
+{
+  key:'r7', type:'email', label:'Письмо 4 из 8',
+  correct:'phishing',
+  hint:'Сравните домен отправителя с настоящим доменом компании буква за буквой.',
+  scene:`
+    <div class="mock-email">
+      <div class="mail-toolbar">Входящие · Почтовый клиент NordTech</div>
+      <div class="mail-head">
+        <div class="mail-subject">Личная просьба, строго конфиденциально</div>
+        <div class="mail-field">От: <b><span class="hotspot" data-verdict="suspicious" data-tip="Домен nordtech-corp.com отличается от настоящего nordtech.com добавленным словом «-corp» — тонкая, но явная подделка домена.">director@nordtech-corp.com</span></b></div>
+        <div class="mail-field">Кому: you@nordtech.com</div>
+      </div>
+      <div class="mail-body">
+        <p><span class="hotspot" data-verdict="suspicious" data-tip="Просьба хранить задание в тайне от коллег — приём изоляции жертвы, чтобы никто не успел проверить и разоблачить обман.">Мне нужна ваша помощь по срочному делу, но, пожалуйста, пока никому не говорите — я сам всё объясню позже.</span></p>
+        <p><span class="hotspot" data-verdict="suspicious" data-tip="Просьба купить подарочные карты и прислать коды — очень распространённая схема мошенничества «от имени руководителя».">Купите, пожалуйста, 5 подарочных карт по 100$ и пришлите мне коды с карт как можно скорее — это для партнёров, я всё компенсирую.</span></p>
+        <p><span class="hotspot" data-verdict="neutral" data-tip="Подпись выглядит официально и профессионально — но это не доказывает, что письмо действительно от директора: оформление подделать легко.">С уважением, генеральный директор NordTech</span></p>
+      </div>
+    </div>
+  `,
+  explainCorrect:'Верно, это фишинг! Домен nordtech-corp.com — подделка настоящего nordtech.com, а просьба купить подарочные карты втайне от коллег — классическая схема мошенничества «от имени руководителя».',
+  explainIncorrect:'На самом деле это фишинговое письмо. Обратите внимание на изменённый домен (nordtech-corp.com вместо nordtech.com), просьбу держать всё в секрете и нестандартную просьбу купить подарочные карты — это типичная схема BEC-мошенничества.'
+},
+
+// РАУНД 8 — финальный сложный спирфишинг
+{
+  key:'r8', type:'email', label:'Письмо 5 из 8 · финал',
+  correct:'phishing',
+  hint:'Проверьте домен отправителя буква за буквой — отличие может быть всего в одном символе.',
+  scene:`
+    <div class="mock-email">
+      <div class="mail-toolbar">Входящие · Почтовый клиент NordTech</div>
+      <div class="mail-head">
+        <div class="mail-subject">Срочно нужен ваш комментарий по проекту «Сокол»</div>
+        <div class="mail-field">От: <b><span class="hotspot" data-verdict="suspicious" data-tip="Присмотритесь внимательнее: домен nordtecn.com, а не nordtech.com — вместо буквы «h» стоит буква «n». Отличие всего в один символ, но домен принадлежит не компании.">hr@nordtecn.com</span></b></div>
+        <div class="mail-field">Кому: you@nordtech.com</div>
+      </div>
+      <div class="mail-body">
+        <p><span class="hotspot" data-verdict="neutral" data-tip="Обращение по имени выглядит убедительно, но злоумышленники могли узнать ваше имя из открытых источников или соцсетей — само по себе это не доказывает подлинность письма.">Здравствуйте! Обращаюсь к вам лично, поскольку вопрос касается проекта «Сокол», над которым вы сейчас работаете.</span></p>
+        <p><span class="hotspot" data-verdict="neutral" data-tip="Упоминание реального внутреннего проекта делает письмо более убедительным, но не является доказательством подлинности — детали о проектах могли стать известны мошенникам заранее.">Нам нужно, чтобы вы срочно подтвердили доступ к внутренним документам проекта — перейдите по ссылке ниже и войдите под своим корпоративным логином.</span></p>
+        <a href="#" class="hotspot mail-btn" data-verdict="suspicious" data-tip="Ссылка ведёт на страницу входа на домене nordtecn-portal.com — снова тот же поддельный домен с заменённой буквой.">Подтвердить доступ к проекту</a>
+      </div>
+    </div>
+  `,
+  explainCorrect:'Верно, это самое сложное письмо в игре — целевой фишинг (спирфишинг)! Единственный явный признак — домен nordtecn.com вместо nordtech.com, отличие всего в одну букву. Персонализация и упоминание реального проекта — лишь способ усыпить бдительность.',
+  explainIncorrect:'На самом деле это спирфишинг — самое убедительное письмо в игре. Несмотря на личное обращение и упоминание настоящего проекта, домен отправителя nordtecn.com отличается от настоящего nordtech.com всего одной заменённой буквой.'
+}
+];
+
+/* ==========================================================================
+   СОСТОЯНИЕ ИГРЫ
+   ========================================================================== */
+let order = ROUNDS.map((_,i)=>i);   // порядок раундов (индексы)
+let currentIndex = 0;               // позиция в order
+let score = 0;
+let correctCount = 0;
+let decidedCount = 0;
+let foundInRound = new Set();
+let hintUsedInRound = false;
+let decisionMadeInRound = false;
+
+/* ---------- Навигация между экранами ---------- */
+function goToBriefing(){
+  document.getElementById('screen-start').style.display='none';
+  document.getElementById('screen-briefing').style.display='flex';
+}
+
+function startGame(){
+  document.getElementById('screen-briefing').style.display='none';
+  document.getElementById('screen-game').style.display='flex';
+  order = shuffle(ROUNDS.map((_,i)=>i));
+  currentIndex = 0;
+  score = 0;
+  correctCount = 0;
+  decidedCount = 0;
+  updateTopBar();
+  loadRound();
+}
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+/* ---------- Загрузка раунда ---------- */
+function loadRound(){
+  foundInRound = new Set();
+  hintUsedInRound = false;
+  decisionMadeInRound = false;
+
+  const roundData = ROUNDS[order[currentIndex]];
+
+  document.getElementById('round-title').innerHTML =
+    `<b>${roundData.label}</b> — изучите объект ниже, найдите детали и примите решение.`;
+  document.getElementById('scene-wrap').innerHTML = roundData.scene;
+
+  const inspector = document.getElementById('inspector');
+  inspector.className = 'empty';
+  inspector.innerHTML = '';
+
+  document.getElementById('feedback').style.display='none';
+  document.getElementById('feedback').className='';
+  document.getElementById('btn-next').style.display='none';
+
+  document.getElementById('btn-phish').disabled = true;
+  document.getElementById('btn-genuine').disabled = true;
+  document.getElementById('btn-hint').disabled = false;
+  document.getElementById('found-counter').textContent = 'Найдено деталей: 0';
+
+  // прогресс раунда
+  const pct = Math.round((currentIndex)/ROUNDS.length*100);
+  document.getElementById('progress-bar-fill').style.width = pct + '%';
+  document.getElementById('stat-round').textContent = `${currentIndex+1} / ${ROUNDS.length}`;
+
+  // навешиваем обработчики на кликабельные детали
+  document.querySelectorAll('.hotspot').forEach(el=>{
+    el.addEventListener('click', (e)=>{
+      e.preventDefault();
+      onHotspotClick(el);
+    });
+  });
+}
+
+/* ---------- Клик по детали сцены ---------- */
+function onHotspotClick(el){
+  const id = elementFingerprint(el);
+  const verdict = el.dataset.verdict;
+  const tip = el.dataset.tip;
+
+  if(!foundInRound.has(id)){
+    foundInRound.add(id);
+    el.classList.add('found', verdict);
+
+    if(verdict !== 'neutral'){
+      score += 1;
+      updateTopBar();
+    }
+    document.getElementById('found-counter').textContent = `Найдено деталей: ${foundInRound.size}`;
+  }
+
+  showInspectorTip(verdict, tip);
+  maybeEnableDecisionButtons();
+}
+
+function elementFingerprint(el){
+  // простой уникальный идентификатор элемента внутри сцены (по позиции в DOM + тексту)
+  return el.dataset.tip;
+}
+
+function showInspectorTip(verdict, tip){
+  const inspector = document.getElementById('inspector');
+  inspector.className = '';
+  const tagClass = verdict==='suspicious' ? 'tag-suspicious' : (verdict==='safe' ? 'tag-safe' : 'tag-neutral');
+  const tagText = verdict==='suspicious' ? 'Подозрительно' : (verdict==='safe' ? 'Хороший знак' : 'Нейтрально');
+  inspector.innerHTML = `<div class="tip-line"><span class="tip-tag ${tagClass}">${tagText}</span><span>${tip}</span></div>`;
+}
+
+function maybeEnableDecisionButtons(){
+  if(decisionMadeInRound) return;
+  if(foundInRound.size >= 2 || hintUsedInRound){
+    document.getElementById('btn-phish').disabled = false;
+    document.getElementById('btn-genuine').disabled = false;
+  }
+}
+
+/* ---------- Подсказка ---------- */
+function useHint(){
+  if(hintUsedInRound || decisionMadeInRound) return;
+  hintUsedInRound = true;
+  const roundData = ROUNDS[order[currentIndex]];
+  const inspector = document.getElementById('inspector');
+  inspector.className = '';
+  inspector.innerHTML = `<div class="tip-line"><span class="tip-tag tag-neutral">Подсказка</span><span>${roundData.hint} (обратите внимание: использование подсказки снижает итоговую оценку раунда)</span></div>`;
+  document.getElementById('btn-hint').disabled = true;
+  maybeEnableDecisionButtons();
+}
+
+/* ---------- Принятие решения ---------- */
+function makeDecision(choice){
+  if(decisionMadeInRound) return;
+  decisionMadeInRound = true;
+
+  document.getElementById('btn-phish').disabled = true;
+  document.getElementById('btn-genuine').disabled = true;
+  document.getElementById('btn-hint').disabled = true;
+
+  const roundData = ROUNDS[order[currentIndex]];
+  const isCorrect = (choice === roundData.correct);
+  decidedCount++;
+
+  let pointsForDecision = 0;
+  if(isCorrect){
+    correctCount++;
+    pointsForDecision = hintUsedInRound ? 5 : 10;
+  }
+  score += pointsForDecision;
+  updateTopBar();
+
+  const fb = document.getElementById('feedback');
+  fb.style.display = 'block';
+  fb.className = isCorrect ? 'correct' : 'incorrect';
+  fb.innerHTML = `
+    <div class="fb-title">${isCorrect ? '✅ Верно!' : '❌ Ошибка'} ${isCorrect ? '(+' + pointsForDecision + ' очков за решение)' : '(0 очков за решение)'}</div>
+    <div>${isCorrect ? roundData.explainCorrect : roundData.explainIncorrect}</div>
+  `;
+
+  document.getElementById('btn-next').style.display = 'inline-block';
+}
+
+/* ---------- Верхняя панель / бар доверия ---------- */
+function updateTopBar(){
+  document.getElementById('stat-score').textContent = score;
+  document.getElementById('stat-round').textContent = `${currentIndex+1} / ${ROUNDS.length}`;
+
+  // индикатор бдительности = доля верных решений среди уже пройденных раундов
+  let pct = 50;
+  if(decidedCount > 0){
+    pct = Math.round((correctCount/decidedCount)*100);
+  }
+  document.getElementById('trust-bar-fill').style.width = pct + '%';
+}
+
+/* ---------- Следующий раунд / финал ---------- */
+function nextRound(){
+  currentIndex++;
+  if(currentIndex >= ROUNDS.length){
+    showFinal();
+  } else {
+    loadRound();
+  }
+}
+
+function showFinal(){
+  document.getElementById('progress-bar-fill').style.width = '100%';
+  document.getElementById('screen-game').style.display='none';
+
+  const percent = Math.round((correctCount/ROUNDS.length)*100);
+  let level = 'Новичок';
+  if(percent >= 80) level = 'Эксперт по кибербезопасности';
+  else if(percent >= 50) level = 'Уверенный пользователь';
+
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('final-percent').textContent = percent + '%';
+  document.getElementById('final-correct').textContent = `${correctCount}/${ROUNDS.length}`;
+  document.getElementById('final-level').textContent = level;
+
+  document.getElementById('screen-final').style.display='flex';
+}
+
+function restartGame(){
+  document.getElementById('screen-final').style.display='none';
+  document.getElementById('screen-game').style.display='flex';
+  order = shuffle(ROUNDS.map((_,i)=>i));
+  currentIndex = 0;
+  score = 0;
+  correctCount = 0;
+  decidedCount = 0;
+  updateTopBar();
+  loadRound();
+}
+</script>
+</body>
+</html>
