@@ -1,0 +1,16 @@
+{
+  "name": "fishing-naydi-poddelku",
+  "version": "1.0.0",
+  "description": "Обучающий point-and-click квест по кибербезопасности: игрок учится распознавать фишинговые письма, сайты и сообщения в мессенджерах.",
+  "main": "Фишинг_Найди_подделку.html",
+  "scripts": {
+    "start": "http-server -o -c-1"
+  },
+  "dependencies": {
+    "http-server": "^14.1.1"
+  },
+  "authors": [
+    "Твоё имя"
+  ],
+  "license": "MIT"
+}
