@@ -13,7 +13,7 @@
 ## Как запустить
 1. Клонируйте репозиторий:
    ```bash
-   git clone https://github.com/username/repo.git
+   git clone https://github.com/Dahovich/phishing_quest.git
    cd repo
 2. Установите зависимости (локальный веб-сервер):
    ```bash
