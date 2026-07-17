@@ -2,7 +2,7 @@
   "name": "fishing-naydi-poddelku",
   "version": "1.0.0",
   "description": "Обучающий point-and-click квест по кибербезопасности: игрок учится распознавать фишинговые письма, сайты и сообщения в мессенджерах.",
-  "main": "main.html",
+  "main": "index.html",
   "scripts": {
     "start": "http-server -o -c-1"
   },
